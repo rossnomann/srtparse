@@ -1,7 +1,10 @@
+use std::fmt;
+use std::error::Error as StdError;
 use std::io::{Error as IoError, Read};
 use std::fs::File;
 use std::num::ParseIntError;
 use std::path::Path;
+use std::result::Result as StdResult;
 use std::time::Duration;
 
 // TODO: ADD DOCS!!!
@@ -23,7 +26,7 @@ pub struct Subtitle {
     pub text: String,
 }
 
-pub fn parse(source: &str) -> Result<Vec<Subtitle>, Error> {
+pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
     let source = source.trim_left_matches(UTF8_BOM).trim().lines();
 
     let mut result = Vec::new();
@@ -100,24 +103,60 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>, Error> {
     Ok(result)
 }
 
-pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>, Error> {
+pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
     let mut file = File::open(path)?;
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
     parse(&buf)
 }
 
+
+/// Alias for std result
+pub type Result<T> = StdResult<T, Error>;
+
+/// Describes all errors that may occur.
 #[derive(Debug)]
 pub enum Error {
+    /// An IO error occured. Contains `std::io::Error`.
     Io(IoError),
+    /// An error when parsing an integer. Contains `std::num::ParseIntError`.
     ParseInt(ParseIntError),
+    /// Subtitle text is missing
     MissingText,
+    /// Subtitle end time is missing
     MissingEndTime,
+    /// Subtitle start time is missing
     MissingStartTime,
+    /// An error when parsing subtitle time
     ParseTime,
 }
 
-// TODO: impl StdError
+impl StdError for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Io(ref err) => err.description(),
+            Error::ParseInt(ref err) => err.description(),
+            Error::MissingText => "Subtitle text is missing",
+            Error::MissingEndTime => "Subtitle end time is missing",
+            Error::MissingStartTime => "Subtitle start time is missing",
+            Error::ParseTime => "Invalid subtitle time",
+        }
+    }
+
+    fn cause(&self) -> Option<&StdError> {
+        match *self {
+            Error::Io(ref err) => Some(err),
+            Error::ParseInt(ref err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        write!(out, "{}", self.description())
+    }
+}
 
 impl From<ParseIntError> for Error {
     fn from(err: ParseIntError) -> Error {
@@ -144,7 +183,7 @@ macro_rules! parse_time_part {
     }}
 }
 
-fn duration_from_str(time: &str) -> Result<Duration, Error> {
+fn duration_from_str(time: &str) -> Result<Duration> {
     let mut time = time.split(",");
     let (hours, mut minutes, mut seconds) = match time.next() {
         Some(val) => {
@@ -176,7 +215,7 @@ fn duration_from_str(time: &str) -> Result<Duration, Error> {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
-    use ::{Error, UTF8_BOM, parse};
+    use ::{Result, UTF8_BOM, parse};
 
     #[test]
     fn it_works() {
@@ -200,7 +239,7 @@ Soon, Marcus will take the throne.
 ";
         let source_with_bom = format!("{}{}", UTF8_BOM, source_without_bom);
 
-        fn assert_it_works(data: &str) -> Result<(), Error> {
+        fn assert_it_works(data: &str) -> Result<()> {
             let result = parse(&data)?;
             assert_eq!(result.len(), 4);
             assert_eq!(result[0].pos, 1);
