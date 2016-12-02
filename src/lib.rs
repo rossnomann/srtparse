@@ -64,17 +64,17 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>, Error> {
                     end_time = None;
                     text = None;
                 }
-                pos = Some(try!(line.parse::<usize>()));
+                pos = Some(line.parse::<usize>()?);
                 state = State::Time;
             }
             State::Time => {
                 let mut parts = line.split("-->");
                 start_time = match parts.next() {
-                    Some(v) => Some(try!(duration_from_str(v))),
+                    Some(v) => Some(duration_from_str(v)?),
                     None => None,
                 };
                 end_time = match parts.next() {
-                    Some(v) => Some(try!(duration_from_str(v))),
+                    Some(v) => Some(duration_from_str(v)?),
                     None => None,
                 };
                 state = State::Text;
@@ -101,9 +101,9 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>, Error> {
 }
 
 pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>, Error> {
-    let mut file = try!(File::open(path));
+    let mut file = File::open(path)?;
     let mut buf = String::new();
-    try!(file.read_to_string(&mut buf));
+    file.read_to_string(&mut buf)?;
     parse(&buf)
 }
 
@@ -135,7 +135,7 @@ macro_rules! parse_time_part {
     ($part:expr) => {{
         match $part {
             Some(val) => {
-                try!(val.trim().parse::<u64>())
+                val.trim().parse::<u64>()?
             },
             None => {
                 return Err(Error::ParseTime);
@@ -201,7 +201,7 @@ Soon, Marcus will take the throne.
         let source_with_bom = format!("{}{}", UTF8_BOM, source_without_bom);
 
         fn assert_it_works(data: &str) -> Result<(), Error> {
-            let result = try!(parse(&data));
+            let result = parse(&data)?;
             assert_eq!(result.len(), 4);
             assert_eq!(result[0].pos, 1);
             assert_eq!(result[0].start_time, Duration::new(58392, 0));
