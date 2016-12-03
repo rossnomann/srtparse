@@ -1,3 +1,25 @@
+//! A library for reading [SRT Subtitles][1].
+//!
+//! # Examples
+//!
+//! ## Reading from string
+//!
+//! ```
+//! use srtparse::parse;
+//! let subtitles = parse("1\n00:00:01,100 --> 00:00:02,120\nHello!").unwrap();
+//! println("{:?}", subtitles);
+//! ```
+//!
+//! ## Reading from file
+//!
+//! ```
+//! use srtparse::read_from_file;
+//! let subtitles = read_from_file("./data/underworld.srt").unwrap();
+//! println!("{:?}", subtitles[0]);
+//! ```
+//!
+//! [1]: https://matroska.org/technical/specs/subtitles/srt.html
+#![warn(missing_docs)]
 use std::fmt;
 use std::error::Error as StdError;
 use std::io::{Error as IoError, Read};
@@ -5,8 +27,6 @@ use std::fs::File;
 use std::path::Path;
 use std::result::Result as StdResult;
 use std::time::Duration;
-
-// TODO: ADD DOCS!!!
 
 const UTF8_BOM: &'static str = "\u{feff}";
 
@@ -17,14 +37,20 @@ enum State {
     Text,
 }
 
+/// A subtitle item
 #[derive(Debug)]
 pub struct Subtitle {
+    /// A number indicating which subtitle it is in the sequence
     pub pos: usize,
+    /// The time that the subtitle should appear
     pub start_time: Duration,
+    /// The time that the subtitle should disappear
     pub end_time: Duration,
+    /// The subtitle itself
     pub text: String,
 }
 
+/// Read subtitles from a string
 pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
     let source = source.trim_left_matches(UTF8_BOM).trim().lines();
 
@@ -105,6 +131,7 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
     Ok(result)
 }
 
+/// Read subtitles from a file
 pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
     let mut file = File::open(path).map_err(|err| Error::OpenFile(err))?;
     let mut buf = String::new();
