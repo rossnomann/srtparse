@@ -7,7 +7,7 @@
 //! ```
 //! use srtparse::parse;
 //! let subtitles = parse("1\n00:00:01,100 --> 00:00:02,120\nHello!").unwrap();
-//! println("{:?}", subtitles);
+//! println!("{:?}", subtitles);
 //! ```
 //!
 //! ## Reading from file
