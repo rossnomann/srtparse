@@ -1,6 +1,16 @@
 [package]
 name = "srtparse"
 version = "0.1.0"
+
+description = "A library for parsing SRT Subtitles"
+keywords = ["srt", "subtitle", "subtitles"]
 authors = ["Kilte Leichnam <nwotnbm@gmail.com>"]
 
-[dependencies]
+homepage = "https://docs.rs/srtparse"
+documentation = "https://docs.rs/srtparse"
+repository = "https://github.com/Kilte/srtparse"
+
+readme = "README.md"
+license = "MIT"
+
+exclude = ["data/*"]

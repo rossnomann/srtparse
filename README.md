@@ -1,14 +1,14 @@
 # srtparse
 
-A library for reading [SRT Subtitles][1].
+A library for parsing [SRT Subtitles][1].
 
 [![Build Status](https://img.shields.io/travis/Kilte/srtparse.svg?style=flat-square)](https://travis-ci.org/Kilte/srtparse)
 [![Downloads](https://img.shields.io/crates/d/srtparse.svg?style=flat-square)](https://crates.io/crates/srtparse/)
-[![Documentation](https://img.shields.io/badge/docs-0.1.0-yellowgreen.svg?style=flat-square)](https://coming-soon/)
+[![Documentation](https://img.shields.io/badge/docs-latest-yellowgreen.svg?style=flat-square)](https://docs.rs/srtparse)
 
 ## Changelog
 
-### 0.1.0 (xx.yy.zzzz)
+### 0.1.0 (03.12.2016)
 
 - First release.
 
