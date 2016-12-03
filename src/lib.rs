@@ -2,7 +2,6 @@ use std::fmt;
 use std::error::Error as StdError;
 use std::io::{Error as IoError, Read};
 use std::fs::File;
-use std::num::ParseIntError;
 use std::path::Path;
 use std::result::Result as StdResult;
 use std::time::Duration;
@@ -67,7 +66,7 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
                     end_time = None;
                     text = None;
                 }
-                pos = Some(line.parse::<usize>()?);
+                pos = Some(line.parse::<usize>().map_err(|_| Error::BadPosition)?);
                 state = State::Time;
             }
             State::Time => {
@@ -80,6 +79,9 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
                     Some(v) => Some(duration_from_str(v)?),
                     None => None,
                 };
+                if parts.next().is_some() {
+                    return Err(Error::BadTime);
+                }
                 state = State::Text;
             }
             State::Text => {
@@ -104,51 +106,61 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
 }
 
 pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
-    let mut file = File::open(path)?;
+    let mut file = File::open(path).map_err(|err| Error::OpenFile(err))?;
     let mut buf = String::new();
-    file.read_to_string(&mut buf)?;
+    file.read_to_string(&mut buf).map_err(|err| Error::ReadFile(err))?;
     parse(&buf)
 }
-
 
 /// Alias for std result
 pub type Result<T> = StdResult<T, Error>;
 
-/// Describes all errors that may occur.
-#[derive(Debug)]
+/// Describes all errors that may occur
 pub enum Error {
-    /// An IO error occured. Contains `std::io::Error`.
-    Io(IoError),
-    /// An error when parsing an integer. Contains `std::num::ParseIntError`.
-    ParseInt(ParseIntError),
-    /// Subtitle text is missing
-    MissingText,
-    /// Subtitle end time is missing
-    MissingEndTime,
+    /// An error when parsing subtitle position
+    BadPosition,
+    /// An error when parsing subtitle time
+    BadTime,
+    /// Unsupported subtitle time format
+    BadTimeFormat,
     /// Subtitle start time is missing
     MissingStartTime,
-    /// An error when parsing subtitle time
-    ParseTime,
+    /// Subtitle end time is missing
+    MissingEndTime,
+    /// Subtitle text is missing
+    MissingText,
+    /// Unable to open a file
+    OpenFile(IoError),
+    /// Unable to subtitles from a file
+    ReadFile(IoError),
 }
 
 impl StdError for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Io(ref err) => err.description(),
-            Error::ParseInt(ref err) => err.description(),
-            Error::MissingText => "Subtitle text is missing",
-            Error::MissingEndTime => "Subtitle end time is missing",
+            Error::BadPosition => "Invalid subtitle position",
+            Error::BadTime => "Invalid subtitle time",
+            Error::BadTimeFormat => "Invalid subtitle time format",
             Error::MissingStartTime => "Subtitle start time is missing",
-            Error::ParseTime => "Invalid subtitle time",
+            Error::MissingEndTime => "Subtitle end time is missing",
+            Error::MissingText => "Subtitle text is missing",
+            Error::OpenFile(ref err) => err.description(),
+            Error::ReadFile(ref err) => err.description(),
         }
     }
 
     fn cause(&self) -> Option<&StdError> {
         match *self {
-            Error::Io(ref err) => Some(err),
-            Error::ParseInt(ref err) => Some(err),
+            Error::OpenFile(ref err) => Some(err),
+            Error::ReadFile(ref err) => Some(err),
             _ => None,
         }
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        write!(out, "{}", self.description())
     }
 }
 
@@ -158,26 +170,14 @@ impl fmt::Display for Error {
     }
 }
 
-impl From<ParseIntError> for Error {
-    fn from(err: ParseIntError) -> Error {
-        Error::ParseInt(err)
-    }
-}
-
-impl From<IoError> for Error {
-    fn from(err: IoError) -> Error {
-        Error::Io(err)
-    }
-}
-
 macro_rules! parse_time_part {
     ($part:expr) => {{
         match $part {
             Some(val) => {
-                val.trim().parse::<u64>()?
+                val.trim().parse::<u64>().map_err(|_| Error::BadTime)?
             },
             None => {
-                return Err(Error::ParseTime);
+                return Err(Error::BadTimeFormat);
             }
         }
     }}
@@ -194,17 +194,17 @@ fn duration_from_str(time: &str) -> Result<Duration> {
                 parse_time_part!(parts.next()),
             );
             if parts.next().is_some() {
-                return Err(Error::ParseTime);
+                return Err(Error::BadTimeFormat);
             }
             result
         },
         None => {
-            return Err(Error::ParseTime);
+            return Err(Error::BadTimeFormat);
         }
     };
     let mut milliseconds = parse_time_part!(time.next());
     if time.next().is_some() {
-        return Err(Error::ParseTime);
+        return Err(Error::BadTimeFormat);
     }
     minutes += hours * 60;
     seconds += minutes * 60;
@@ -215,7 +215,7 @@ fn duration_from_str(time: &str) -> Result<Duration> {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
-    use ::{Result, UTF8_BOM, parse};
+    use ::{Result, UTF8_BOM, parse, read_from_file};
 
     #[test]
     fn it_works() {
@@ -263,8 +263,79 @@ Soon, Marcus will take the throne.
 
         assert_it_works(&source_without_bom).expect("Failed to parse UTF-8 source without BOM");
         assert_it_works(&source_with_bom).expect("Failed to parse UTF-8 source with BOM");
+        let empty = parse("").unwrap();
+        assert_eq!(empty.len(), 0);
     }
 
-    // TODO: NEED MOAR TESTS!!!
+    #[test]
+    #[should_panic(expected = "Invalid subtitle position")]
+    fn it_fails_with_bad_position() {
+        parse("bad position").unwrap();
+    }
 
+    #[test]
+    #[should_panic(expected = "Invalid subtitle time")]
+    fn it_fails_with_bad_start_time() {
+        parse("1\nbad time").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid subtitle time")]
+    fn it_fails_with_bad_end_time() {
+        parse("1\n00:00:58,392 --> bad end time").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid subtitle time format")]
+    fn it_fails_with_bad_time_format() {
+        parse("1\n00:00:00:00").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid subtitle time")]
+    fn it_fails_with_extra_time() {
+        parse("1\n00:00:58,392 --> 00:01:02,563 -> 00:01:02,563").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Subtitle start time is missing")]
+    fn it_fails_with_missing_start_time() {
+        parse("1").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Subtitle end time is missing")]
+    fn it_fails_with_missing_end_time() {
+        parse("1\n00:00:58,392").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Subtitle text is missing")]
+    fn it_fails_with_missing_text() {
+        parse("1\n00:00:58,392 --> 00:01:02,563").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "entity not found")]
+    fn read_from_file_failed() {
+        read_from_file("/file/does/not/exist").unwrap();
+    }
+
+    #[test]
+    fn read_from_file_success() {
+        let result = read_from_file("./data/underworld.srt").unwrap();
+        assert_eq!(result.len(), 706);
+
+        let first = result.first().unwrap();
+        assert_eq!(first.pos, 1);
+        assert_eq!(first.start_time, Duration::new(58392, 0));
+        assert_eq!(first.end_time, Duration::new(61478, 0));
+        assert_eq!(first.text, "Война закончилась в мгновение ока.");
+
+        let last = result.last().unwrap();
+        assert_eq!(last.pos, 706);
+        assert_eq!(last.start_time, Duration::new(6801628, 0));
+        assert_eq!(last.end_time, Duration::new(6804381, 0));
+        assert_eq!(last.text, "... будет объявлена охота.");
+    }
 }
