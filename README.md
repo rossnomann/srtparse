@@ -8,6 +8,11 @@ A library for parsing [SRT Subtitles][1].
 
 ## Changelog
 
+
+### 0.1.1 (04.12.2016)
+
+- Fixed time parsing.
+
 ### 0.1.0 (03.12.2016)
 
 - First release.

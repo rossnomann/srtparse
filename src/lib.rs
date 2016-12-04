@@ -236,7 +236,7 @@ fn duration_from_str(time: &str) -> Result<Duration> {
     minutes += hours * 60;
     seconds += minutes * 60;
     milliseconds += seconds * 1000;
-    Ok(Duration::new(milliseconds, 0))
+    Ok(Duration::from_millis(milliseconds))
 }
 
 #[cfg(test)]
@@ -270,20 +270,20 @@ Soon, Marcus will take the throne.
             let result = parse(&data)?;
             assert_eq!(result.len(), 4);
             assert_eq!(result[0].pos, 1);
-            assert_eq!(result[0].start_time, Duration::new(58392, 0));
-            assert_eq!(result[0].end_time, Duration::new(62563, 0));
+            assert_eq!(result[0].start_time, Duration::from_millis(58392));
+            assert_eq!(result[0].end_time, Duration::from_millis(62563));
             assert_eq!(result[0].text, "The war had all but ground to a halt\nin the blink of an eye.");
             assert_eq!(result[1].pos, 2);
-            assert_eq!(result[1].start_time, Duration::new(64565, 0));
-            assert_eq!(result[1].end_time, Duration::new(68986, 0));
+            assert_eq!(result[1].start_time, Duration::from_millis(64565));
+            assert_eq!(result[1].end_time, Duration::from_millis(68986));
             assert_eq!(result[1].text, "Lucian, the most feared and ruthless\nleader ever to rule the Lycan clan...");
             assert_eq!(result[2].pos, 3);
-            assert_eq!(result[2].start_time, Duration::new(69070, 0));
-            assert_eq!(result[2].end_time, Duration::new(71656, 0));
+            assert_eq!(result[2].start_time, Duration::from_millis(69070));
+            assert_eq!(result[2].end_time, Duration::from_millis(71656));
             assert_eq!(result[2].text, "...had finally been killed.");
             assert_eq!(result[3].pos, 652);
-            assert_eq!(result[3].start_time, Duration::new(6782325, 0));
-            assert_eq!(result[3].end_time, Duration::new(6786162, 0));
+            assert_eq!(result[3].start_time, Duration::from_millis(6782325));
+            assert_eq!(result[3].end_time, Duration::from_millis(6786162));
             assert_eq!(result[3].text, "Soon, Marcus will take the throne.");
             Ok(())
         }
@@ -355,14 +355,14 @@ Soon, Marcus will take the throne.
 
         let first = result.first().unwrap();
         assert_eq!(first.pos, 1);
-        assert_eq!(first.start_time, Duration::new(58392, 0));
-        assert_eq!(first.end_time, Duration::new(61478, 0));
+        assert_eq!(first.start_time, Duration::from_millis(58392));
+        assert_eq!(first.end_time, Duration::from_millis(61478));
         assert_eq!(first.text, "Война закончилась в мгновение ока.");
 
         let last = result.last().unwrap();
         assert_eq!(last.pos, 706);
-        assert_eq!(last.start_time, Duration::new(6801628, 0));
-        assert_eq!(last.end_time, Duration::new(6804381, 0));
+        assert_eq!(last.start_time, Duration::from_millis(6801628));
+        assert_eq!(last.end_time, Duration::from_millis(6804381));
         assert_eq!(last.text, "... будет объявлена охота.");
     }
 }
