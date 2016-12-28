@@ -158,7 +158,7 @@ pub enum Error {
     MissingText,
     /// Unable to open a file
     OpenFile(IoError),
-    /// Unable to subtitles from a file
+    /// Unable to read data from a file
     ReadFile(IoError),
 }
 
