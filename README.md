@@ -1,8 +1,5 @@
 # srtparse
 
-**Maintainers Wanted**
-Send me an E-Mail (nwotnbm at gmail dot com)
-
 A library for parsing [SRT Subtitles][1].
 
 [![Build Status](https://img.shields.io/travis/Kilte/srtparse.svg?style=flat-square)](https://travis-ci.org/Kilte/srtparse)
