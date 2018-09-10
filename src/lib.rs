@@ -20,10 +20,10 @@
 //!
 //! [1]: https://matroska.org/technical/specs/subtitles/srt.html
 #![warn(missing_docs)]
-use std::fmt;
 use std::error::Error as StdError;
-use std::io::{Error as IoError, Read};
+use std::fmt;
 use std::fs::File;
+use std::io::{Error as IoError, Read};
 use std::path::Path;
 use std::result::Result as StdResult;
 use std::time::Duration;
@@ -64,7 +64,7 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
     let mut text: Option<String> = None;
 
     macro_rules! push_subtitle {
-        ($pos:ident) => (
+        ($pos:ident) => {
             result.push(Subtitle {
                 pos: $pos,
                 start_time: match start_time {
@@ -78,9 +78,9 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
                 text: match text {
                     Some(val) => val,
                     None => return Err(Error::MissingText),
-                }
+                },
             });
-        )
+        };
     }
 
     for line in source {
@@ -135,7 +135,8 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
 pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
     let mut file = File::open(path).map_err(|err| Error::OpenFile(err))?;
     let mut buf = String::new();
-    file.read_to_string(&mut buf).map_err(|err| Error::ReadFile(err))?;
+    file.read_to_string(&mut buf)
+        .map_err(|err| Error::ReadFile(err))?;
     parse(&buf)
 }
 
@@ -200,14 +201,12 @@ impl fmt::Display for Error {
 macro_rules! parse_time_part {
     ($part:expr) => {{
         match $part {
-            Some(val) => {
-                val.trim().parse::<u64>().map_err(|_| Error::BadTime)?
-            },
+            Some(val) => val.trim().parse::<u64>().map_err(|_| Error::BadTime)?,
             None => {
                 return Err(Error::BadTimeFormat);
             }
         }
-    }}
+    }};
 }
 
 fn duration_from_str(time: &str) -> Result<Duration> {
@@ -224,7 +223,7 @@ fn duration_from_str(time: &str) -> Result<Duration> {
                 return Err(Error::BadTimeFormat);
             }
             result
-        },
+        }
         None => {
             return Err(Error::BadTimeFormat);
         }
@@ -242,7 +241,7 @@ fn duration_from_str(time: &str) -> Result<Duration> {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
-    use ::{Result, UTF8_BOM, parse, read_from_file};
+    use {parse, read_from_file, Result, UTF8_BOM};
 
     #[test]
     fn it_works() {
@@ -272,11 +271,17 @@ Soon, Marcus will take the throne.
             assert_eq!(result[0].pos, 1);
             assert_eq!(result[0].start_time, Duration::from_millis(58392));
             assert_eq!(result[0].end_time, Duration::from_millis(62563));
-            assert_eq!(result[0].text, "The war had all but ground to a halt\nin the blink of an eye.");
+            assert_eq!(
+                result[0].text,
+                "The war had all but ground to a halt\nin the blink of an eye."
+            );
             assert_eq!(result[1].pos, 2);
             assert_eq!(result[1].start_time, Duration::from_millis(64565));
             assert_eq!(result[1].end_time, Duration::from_millis(68986));
-            assert_eq!(result[1].text, "Lucian, the most feared and ruthless\nleader ever to rule the Lycan clan...");
+            assert_eq!(
+                result[1].text,
+                "Lucian, the most feared and ruthless\nleader ever to rule the Lycan clan..."
+            );
             assert_eq!(result[2].pos, 3);
             assert_eq!(result[2].start_time, Duration::from_millis(69070));
             assert_eq!(result[2].end_time, Duration::from_millis(71656));
@@ -357,7 +362,10 @@ Soon, Marcus will take the throne.
         assert_eq!(first.pos, 1);
         assert_eq!(first.start_time, Duration::from_millis(58392));
         assert_eq!(first.end_time, Duration::from_millis(61478));
-        assert_eq!(first.text, "Война закончилась в мгновение ока.");
+        assert_eq!(
+            first.text,
+            "Война закончилась в мгновение ока."
+        );
 
         let last = result.last().unwrap();
         assert_eq!(last.pos, 706);
