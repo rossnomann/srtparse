@@ -362,10 +362,7 @@ Soon, Marcus will take the throne.
         assert_eq!(first.pos, 1);
         assert_eq!(first.start_time, Duration::from_millis(58392));
         assert_eq!(first.end_time, Duration::from_millis(61478));
-        assert_eq!(
-            first.text,
-            "Война закончилась в мгновение ока."
-        );
+        assert_eq!(first.text, "Война закончилась в мгновение ока.");
 
         let last = result.last().unwrap();
         assert_eq!(last.pos, 706);
