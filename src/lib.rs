@@ -346,7 +346,7 @@ Soon, Marcus will take the throne.
         let err = read_from_file("/file/does/not/exist")
             .unwrap_err()
             .to_string();
-        assert_eq!(err, "entity not found");
+        assert_eq!(err, "No such file or directory (os error 2)");
     }
 
     #[test]
