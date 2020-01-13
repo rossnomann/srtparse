@@ -28,7 +28,7 @@ use std::path::Path;
 use std::result::Result as StdResult;
 use std::time::Duration;
 
-const UTF8_BOM: &'static str = "\u{feff}";
+const UTF8_BOM: &str = "\u{feff}";
 
 #[derive(Debug)]
 enum State {
@@ -52,7 +52,7 @@ pub struct Subtitle {
 
 /// Read subtitles from a string
 pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
-    let source = source.trim_left_matches(UTF8_BOM).trim().lines();
+    let source = source.trim_start_matches(UTF8_BOM).trim().lines();
 
     let mut result = Vec::new();
 
@@ -113,13 +113,11 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
             State::Text => {
                 if line.is_empty() {
                     state = State::Pos;
+                } else if let Some(ref mut txt) = text {
+                    txt.push('\n');
+                    txt.push_str(line);
                 } else {
-                    if let Some(ref mut txt) = text {
-                        txt.push('\n');
-                        txt.push_str(line);
-                    } else {
-                        text = Some(line.to_string());
-                    }
+                    text = Some(line.to_string());
                 }
             }
         }
@@ -133,10 +131,9 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
 
 /// Read subtitles from a file
 pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
-    let mut file = File::open(path).map_err(|err| Error::OpenFile(err))?;
+    let mut file = File::open(path).map_err(Error::OpenFile)?;
     let mut buf = String::new();
-    file.read_to_string(&mut buf)
-        .map_err(|err| Error::ReadFile(err))?;
+    file.read_to_string(&mut buf).map_err(Error::ReadFile)?;
     parse(&buf)
 }
 
@@ -177,7 +174,7 @@ impl StdError for Error {
         }
     }
 
-    fn cause(&self) -> Option<&StdError> {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match *self {
             Error::OpenFile(ref err) => Some(err),
             Error::ReadFile(ref err) => Some(err),
@@ -210,10 +207,10 @@ macro_rules! parse_time_part {
 }
 
 fn duration_from_str(time: &str) -> Result<Duration> {
-    let mut time = time.split(",");
+    let mut time = time.split(',');
     let (hours, mut minutes, mut seconds) = match time.next() {
         Some(val) => {
-            let mut parts = val.split(":");
+            let mut parts = val.split(':');
             let result = (
                 parse_time_part!(parts.next()),
                 parse_time_part!(parts.next()),
@@ -287,8 +284,8 @@ Soon, Marcus will take the throne.
             assert_eq!(result[2].end_time, Duration::from_millis(71656));
             assert_eq!(result[2].text, "...had finally been killed.");
             assert_eq!(result[3].pos, 652);
-            assert_eq!(result[3].start_time, Duration::from_millis(6782325));
-            assert_eq!(result[3].end_time, Duration::from_millis(6786162));
+            assert_eq!(result[3].start_time, Duration::from_millis(6_782_325));
+            assert_eq!(result[3].end_time, Duration::from_millis(6_786_162));
             assert_eq!(result[3].text, "Soon, Marcus will take the throne.");
             Ok(())
         }
@@ -366,8 +363,8 @@ Soon, Marcus will take the throne.
 
         let last = result.last().unwrap();
         assert_eq!(last.pos, 706);
-        assert_eq!(last.start_time, Duration::from_millis(6801628));
-        assert_eq!(last.end_time, Duration::from_millis(6804381));
+        assert_eq!(last.start_time, Duration::from_millis(6_801_628));
+        assert_eq!(last.end_time, Duration::from_millis(6_804_381));
         assert_eq!(last.text, "... будет объявлена охота.");
     }
 }
