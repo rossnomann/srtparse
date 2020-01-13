@@ -2,7 +2,7 @@
 
 A library for parsing [SRT Subtitles][1].
 
-[![Build Status](https://img.shields.io/travis/rossnomann/srtparse.svg?style=flat-square)](https://travis-ci.org/rossnomann/srtparse)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/rossnomann/srtparse/CI?style=flat-square)](https://github.com/rossnomann/srtparse/actions/)
 [![Downloads](https://img.shields.io/crates/d/srtparse.svg?style=flat-square)](https://crates.io/crates/srtparse/)
 [![Documentation](https://img.shields.io/badge/docs-latest-yellowgreen.svg?style=flat-square)](https://docs.rs/srtparse)
 
