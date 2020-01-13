@@ -141,6 +141,7 @@ pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
 pub type Result<T> = StdResult<T, Error>;
 
 /// Describes all errors that may occur
+#[derive(Debug)]
 pub enum Error {
     /// An error when parsing subtitle position
     BadPosition,
@@ -161,19 +162,6 @@ pub enum Error {
 }
 
 impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::BadPosition => "Invalid subtitle position",
-            Error::BadTime => "Invalid subtitle time",
-            Error::BadTimeFormat => "Invalid subtitle time format",
-            Error::MissingStartTime => "Subtitle start time is missing",
-            Error::MissingEndTime => "Subtitle end time is missing",
-            Error::MissingText => "Subtitle text is missing",
-            Error::OpenFile(ref err) => err.description(),
-            Error::ReadFile(ref err) => err.description(),
-        }
-    }
-
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match *self {
             Error::OpenFile(ref err) => Some(err),
@@ -183,15 +171,22 @@ impl StdError for Error {
     }
 }
 
-impl fmt::Debug for Error {
-    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
-        write!(out, "{}", self.description())
-    }
-}
-
 impl fmt::Display for Error {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
-        write!(out, "{}", self.description())
+        write!(
+            out,
+            "{}",
+            match self {
+                Error::BadPosition => "Invalid subtitle position",
+                Error::BadTime => "Invalid subtitle time",
+                Error::BadTimeFormat => "Invalid subtitle time format",
+                Error::MissingStartTime => "Subtitle start time is missing",
+                Error::MissingEndTime => "Subtitle end time is missing",
+                Error::MissingText => "Subtitle text is missing",
+                Error::OpenFile(ref err) => err.description(),
+                Error::ReadFile(ref err) => err.description(),
+            }
+        )
     }
 }
 
@@ -297,57 +292,65 @@ Soon, Marcus will take the throne.
     }
 
     #[test]
-    #[should_panic(expected = "Invalid subtitle position")]
     fn it_fails_with_bad_position() {
-        parse("bad position").unwrap();
+        let err = parse("bad position").unwrap_err().to_string();
+        assert_eq!(err, "Invalid subtitle position");
     }
 
     #[test]
-    #[should_panic(expected = "Invalid subtitle time")]
     fn it_fails_with_bad_start_time() {
-        parse("1\nbad time").unwrap();
+        let err = parse("1\nbad time").unwrap_err().to_string();
+        assert_eq!(err, "Invalid subtitle time");
     }
 
     #[test]
-    #[should_panic(expected = "Invalid subtitle time")]
     fn it_fails_with_bad_end_time() {
-        parse("1\n00:00:58,392 --> bad end time").unwrap();
+        let err = parse("1\n00:00:58,392 --> bad end time")
+            .unwrap_err()
+            .to_string();
+        assert_eq!(err, "Invalid subtitle time");
     }
 
     #[test]
-    #[should_panic(expected = "Invalid subtitle time format")]
     fn it_fails_with_bad_time_format() {
-        parse("1\n00:00:00:00").unwrap();
+        let err = parse("1\n00:00:00:00").unwrap_err().to_string();
+        assert_eq!(err, "Invalid subtitle time format");
     }
 
     #[test]
-    #[should_panic(expected = "Invalid subtitle time")]
     fn it_fails_with_extra_time() {
-        parse("1\n00:00:58,392 --> 00:01:02,563 -> 00:01:02,563").unwrap();
+        let err = parse("1\n00:00:58,392 --> 00:01:02,563 -> 00:01:02,563")
+            .unwrap_err()
+            .to_string();
+        assert_eq!(err, "Invalid subtitle time");
     }
 
     #[test]
-    #[should_panic(expected = "Subtitle start time is missing")]
     fn it_fails_with_missing_start_time() {
-        parse("1").unwrap();
+        let err = parse("1").unwrap_err().to_string();
+        assert_eq!(err, "Subtitle start time is missing");
     }
 
     #[test]
-    #[should_panic(expected = "Subtitle end time is missing")]
     fn it_fails_with_missing_end_time() {
-        parse("1\n00:00:58,392").unwrap();
+        let err = parse("1\n00:00:58,392").unwrap_err().to_string();
+        assert_eq!(err, "Subtitle end time is missing");
     }
 
     #[test]
-    #[should_panic(expected = "Subtitle text is missing")]
     fn it_fails_with_missing_text() {
-        parse("1\n00:00:58,392 --> 00:01:02,563").unwrap();
+        let err = parse("1\n00:00:58,392 --> 00:01:02,563")
+            .unwrap_err()
+            .to_string();
+        assert_eq!(err, "Subtitle text is missing");
     }
 
     #[test]
-    #[should_panic(expected = "entity not found")]
     fn read_from_file_failed() {
-        read_from_file("/file/does/not/exist").unwrap();
+        let err = read_from_file("/file/does/not/exist")
+            .unwrap_err()
+            .to_string();
+        assert_eq!(err, "entity not found");
     }
 
     #[test]
