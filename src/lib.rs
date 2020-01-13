@@ -173,20 +173,16 @@ impl StdError for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            out,
-            "{}",
-            match self {
-                Error::BadPosition => "Invalid subtitle position",
-                Error::BadTime => "Invalid subtitle time",
-                Error::BadTimeFormat => "Invalid subtitle time format",
-                Error::MissingStartTime => "Subtitle start time is missing",
-                Error::MissingEndTime => "Subtitle end time is missing",
-                Error::MissingText => "Subtitle text is missing",
-                Error::OpenFile(ref err) => err.description(),
-                Error::ReadFile(ref err) => err.description(),
-            }
-        )
+        match self {
+            Error::BadPosition => write!(out, "Invalid subtitle position"),
+            Error::BadTime => write!(out, "Invalid subtitle time"),
+            Error::BadTimeFormat => write!(out, "Invalid subtitle time format"),
+            Error::MissingStartTime => write!(out, "Subtitle start time is missing"),
+            Error::MissingEndTime => write!(out, "Subtitle end time is missing"),
+            Error::MissingText => write!(out, "Subtitle text is missing"),
+            Error::OpenFile(ref err) => write!(out, "{}", err),
+            Error::ReadFile(ref err) => write!(out, "{}", err),
+        }
     }
 }
 
