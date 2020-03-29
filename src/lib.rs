@@ -21,12 +21,17 @@
 //! [1]: https://matroska.org/technical/specs/subtitles/srt.html
 #![warn(missing_docs)]
 
-pub use self::{error::Error, subtitle::Subtitle};
+pub use self::{
+    error::Error,
+    subtitle::Subtitle,
+    time::{ParseTimeError, Time},
+};
 
-use std::{fs::File, io::Read, path::Path, result::Result as StdResult, time::Duration};
+use std::{fs::File, io::Read, path::Path, result::Result as StdResult};
 
 mod error;
 mod subtitle;
+mod time;
 
 const UTF8_BOM: &str = "\u{feff}";
 
@@ -46,8 +51,8 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
     let mut state = State::Pos;
 
     let mut pos: Option<usize> = None;
-    let mut start_time: Option<Duration> = None;
-    let mut end_time: Option<Duration> = None;
+    let mut start_time: Option<Time> = None;
+    let mut end_time: Option<Time> = None;
     let mut text: Option<String> = None;
 
     macro_rules! push_subtitle {
@@ -85,15 +90,15 @@ pub fn parse(source: &str) -> Result<Vec<Subtitle>> {
             State::Time => {
                 let mut parts = line.split("-->");
                 start_time = match parts.next() {
-                    Some(v) => Some(duration_from_str(v)?),
+                    Some(v) => Some(v.parse().map_err(Error::ParseTimeStart)?),
                     None => None,
                 };
                 end_time = match parts.next() {
-                    Some(v) => Some(duration_from_str(v)?),
+                    Some(v) => Some(v.parse().map_err(Error::ParseTimeEnd)?),
                     None => None,
                 };
                 if parts.next().is_some() {
-                    return Err(Error::BadTime);
+                    return Err(Error::ExtraTime);
                 }
                 state = State::Text;
             }
@@ -127,49 +132,10 @@ pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
 /// Alias for std result
 pub type Result<T> = StdResult<T, Error>;
 
-macro_rules! parse_time_part {
-    ($part:expr) => {{
-        match $part {
-            Some(val) => val.trim().parse::<u64>().map_err(|_| Error::BadTime)?,
-            None => {
-                return Err(Error::BadTimeFormat);
-            }
-        }
-    }};
-}
-
-fn duration_from_str(time: &str) -> Result<Duration> {
-    let mut time = time.split(',');
-    let (hours, mut minutes, mut seconds) = match time.next() {
-        Some(val) => {
-            let mut parts = val.split(':');
-            let result = (
-                parse_time_part!(parts.next()),
-                parse_time_part!(parts.next()),
-                parse_time_part!(parts.next()),
-            );
-            if parts.next().is_some() {
-                return Err(Error::BadTimeFormat);
-            }
-            result
-        }
-        None => {
-            return Err(Error::BadTimeFormat);
-        }
-    };
-    let mut milliseconds = parse_time_part!(time.next());
-    if time.next().is_some() {
-        return Err(Error::BadTimeFormat);
-    }
-    minutes += hours * 60;
-    seconds += minutes * 60;
-    milliseconds += seconds * 1000;
-    Ok(Duration::from_millis(milliseconds))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn it_works() {
@@ -197,26 +163,26 @@ Soon, Marcus will take the throne.
             let result = parse(&data)?;
             assert_eq!(result.len(), 4);
             assert_eq!(result[0].pos, 1);
-            assert_eq!(result[0].start_time, Duration::from_millis(58392));
-            assert_eq!(result[0].end_time, Duration::from_millis(62563));
+            assert_eq!(result[0].start_time.into_duration(), Duration::from_millis(58392));
+            assert_eq!(result[0].end_time.into_duration(), Duration::from_millis(62563));
             assert_eq!(
                 result[0].text,
                 "The war had all but ground to a halt\nin the blink of an eye."
             );
             assert_eq!(result[1].pos, 2);
-            assert_eq!(result[1].start_time, Duration::from_millis(64565));
-            assert_eq!(result[1].end_time, Duration::from_millis(68986));
+            assert_eq!(result[1].start_time.into_duration(), Duration::from_millis(64565));
+            assert_eq!(result[1].end_time.into_duration(), Duration::from_millis(68986));
             assert_eq!(
                 result[1].text,
                 "Lucian, the most feared and ruthless\nleader ever to rule the Lycan clan..."
             );
             assert_eq!(result[2].pos, 3);
-            assert_eq!(result[2].start_time, Duration::from_millis(69070));
-            assert_eq!(result[2].end_time, Duration::from_millis(71656));
+            assert_eq!(result[2].start_time.into_duration(), Duration::from_millis(69070));
+            assert_eq!(result[2].end_time.into_duration(), Duration::from_millis(71656));
             assert_eq!(result[2].text, "...had finally been killed.");
             assert_eq!(result[3].pos, 652);
-            assert_eq!(result[3].start_time, Duration::from_millis(6_782_325));
-            assert_eq!(result[3].end_time, Duration::from_millis(6_786_162));
+            assert_eq!(result[3].start_time.into_duration(), Duration::from_millis(6_782_325));
+            assert_eq!(result[3].end_time.into_duration(), Duration::from_millis(6_786_162));
             assert_eq!(result[3].text, "Soon, Marcus will take the throne.");
             Ok(())
         }
@@ -230,51 +196,57 @@ Soon, Marcus will take the throne.
     #[test]
     fn it_fails_with_bad_position() {
         let err = parse("bad position").unwrap_err().to_string();
-        assert_eq!(err, "Invalid subtitle position");
+        assert_eq!(err, "invalid subtitle position");
     }
 
     #[test]
     fn it_fails_with_bad_start_time() {
         let err = parse("1\nbad time").unwrap_err().to_string();
-        assert_eq!(err, "Invalid subtitle time");
+        assert_eq!(
+            err,
+            "failed to parse start time: could not parse hours: invalid digit found in string"
+        );
     }
 
     #[test]
     fn it_fails_with_bad_end_time() {
         let err = parse("1\n00:00:58,392 --> bad end time").unwrap_err().to_string();
-        assert_eq!(err, "Invalid subtitle time");
+        assert_eq!(
+            err,
+            "failed to parse end time: could not parse hours: invalid digit found in string"
+        );
     }
 
     #[test]
     fn it_fails_with_bad_time_format() {
         let err = parse("1\n00:00:00:00").unwrap_err().to_string();
-        assert_eq!(err, "Invalid subtitle time format");
+        assert_eq!(err, "failed to parse start time: unexpected time part: \'00\'");
     }
 
     #[test]
     fn it_fails_with_extra_time() {
-        let err = parse("1\n00:00:58,392 --> 00:01:02,563 -> 00:01:02,563")
+        let err = parse("1\n00:00:58,392 --> 00:01:02,563 --> 00:01:02,563")
             .unwrap_err()
             .to_string();
-        assert_eq!(err, "Invalid subtitle time");
+        assert_eq!(err, "an extra time part found, there should be start and end only");
     }
 
     #[test]
     fn it_fails_with_missing_start_time() {
         let err = parse("1").unwrap_err().to_string();
-        assert_eq!(err, "Subtitle start time is missing");
+        assert_eq!(err, "subtitle start time is missing");
     }
 
     #[test]
     fn it_fails_with_missing_end_time() {
         let err = parse("1\n00:00:58,392").unwrap_err().to_string();
-        assert_eq!(err, "Subtitle end time is missing");
+        assert_eq!(err, "subtitle end time is missing");
     }
 
     #[test]
     fn it_fails_with_missing_text() {
         let err = parse("1\n00:00:58,392 --> 00:01:02,563").unwrap_err().to_string();
-        assert_eq!(err, "Subtitle text is missing");
+        assert_eq!(err, "subtitle text is missing");
     }
 
     #[test]
@@ -290,14 +262,14 @@ Soon, Marcus will take the throne.
 
         let first = result.first().unwrap();
         assert_eq!(first.pos, 1);
-        assert_eq!(first.start_time, Duration::from_millis(58392));
-        assert_eq!(first.end_time, Duration::from_millis(61478));
+        assert_eq!(first.start_time.into_duration(), Duration::from_millis(58392));
+        assert_eq!(first.end_time.into_duration(), Duration::from_millis(61478));
         assert_eq!(first.text, "Война закончилась в мгновение ока.");
 
         let last = result.last().unwrap();
         assert_eq!(last.pos, 706);
-        assert_eq!(last.start_time, Duration::from_millis(6_801_628));
-        assert_eq!(last.end_time, Duration::from_millis(6_804_381));
+        assert_eq!(last.start_time.into_duration(), Duration::from_millis(6_801_628));
+        assert_eq!(last.end_time.into_duration(), Duration::from_millis(6_804_381));
         assert_eq!(last.text, "... будет объявлена охота.");
     }
 }

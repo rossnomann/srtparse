@@ -1,3 +1,4 @@
+use crate::time::ParseTimeError;
 use std::{error::Error as StdError, fmt, io::Error as IoError};
 
 /// Describes all errors that may occur
@@ -5,10 +6,8 @@ use std::{error::Error as StdError, fmt, io::Error as IoError};
 pub enum Error {
     /// An error when parsing subtitle position
     BadPosition,
-    /// An error when parsing subtitle time
-    BadTime,
-    /// Unsupported subtitle time format
-    BadTimeFormat,
+    /// An extra time part found in subtitle, there should be start and end only
+    ExtraTime,
     /// Subtitle start time is missing
     MissingStartTime,
     /// Subtitle end time is missing
@@ -19,29 +18,38 @@ pub enum Error {
     OpenFile(IoError),
     /// Unable to read data from a file
     ReadFile(IoError),
+    /// Could not parse start time
+    ParseTimeStart(ParseTimeError),
+    /// Could not parse end time
+    ParseTimeEnd(ParseTimeError),
 }
 
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match *self {
-            Error::OpenFile(ref err) => Some(err),
-            Error::ReadFile(ref err) => Some(err),
-            _ => None,
-        }
+        use self::Error::*;
+        Some(match self {
+            OpenFile(err) => err,
+            ReadFile(err) => err,
+            ParseTimeStart(err) => err,
+            ParseTimeEnd(err) => err,
+            _ => return None,
+        })
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        use self::Error::*;
         match self {
-            Error::BadPosition => write!(out, "Invalid subtitle position"),
-            Error::BadTime => write!(out, "Invalid subtitle time"),
-            Error::BadTimeFormat => write!(out, "Invalid subtitle time format"),
-            Error::MissingStartTime => write!(out, "Subtitle start time is missing"),
-            Error::MissingEndTime => write!(out, "Subtitle end time is missing"),
-            Error::MissingText => write!(out, "Subtitle text is missing"),
-            Error::OpenFile(ref err) => write!(out, "{}", err),
-            Error::ReadFile(ref err) => write!(out, "{}", err),
+            BadPosition => write!(out, "invalid subtitle position"),
+            ExtraTime => write!(out, "an extra time part found, there should be start and end only"),
+            MissingStartTime => write!(out, "subtitle start time is missing"),
+            MissingEndTime => write!(out, "subtitle end time is missing"),
+            MissingText => write!(out, "subtitle text is missing"),
+            OpenFile(err) => write!(out, "{}", err),
+            ReadFile(err) => write!(out, "{}", err),
+            ParseTimeStart(err) => write!(out, "failed to parse start time: {}", err),
+            ParseTimeEnd(err) => write!(out, "failed to parse end time: {}", err),
         }
     }
 }
