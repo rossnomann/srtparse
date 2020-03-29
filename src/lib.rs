@@ -20,15 +20,11 @@
 //!
 //! [1]: https://matroska.org/technical/specs/subtitles/srt.html
 #![warn(missing_docs)]
-use std::{
-    error::Error as StdError,
-    fmt,
-    fs::File,
-    io::{Error as IoError, Read},
-    path::Path,
-    result::Result as StdResult,
-    time::Duration,
-};
+
+pub use crate::error::Error;
+use std::{fs::File, io::Read, path::Path, result::Result as StdResult, time::Duration};
+
+mod error;
 
 const UTF8_BOM: &str = "\u{feff}";
 
@@ -141,52 +137,6 @@ pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Subtitle>> {
 
 /// Alias for std result
 pub type Result<T> = StdResult<T, Error>;
-
-/// Describes all errors that may occur
-#[derive(Debug)]
-pub enum Error {
-    /// An error when parsing subtitle position
-    BadPosition,
-    /// An error when parsing subtitle time
-    BadTime,
-    /// Unsupported subtitle time format
-    BadTimeFormat,
-    /// Subtitle start time is missing
-    MissingStartTime,
-    /// Subtitle end time is missing
-    MissingEndTime,
-    /// Subtitle text is missing
-    MissingText,
-    /// Unable to open a file
-    OpenFile(IoError),
-    /// Unable to read data from a file
-    ReadFile(IoError),
-}
-
-impl StdError for Error {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match *self {
-            Error::OpenFile(ref err) => Some(err),
-            Error::ReadFile(ref err) => Some(err),
-            _ => None,
-        }
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::BadPosition => write!(out, "Invalid subtitle position"),
-            Error::BadTime => write!(out, "Invalid subtitle time"),
-            Error::BadTimeFormat => write!(out, "Invalid subtitle time format"),
-            Error::MissingStartTime => write!(out, "Subtitle start time is missing"),
-            Error::MissingEndTime => write!(out, "Subtitle end time is missing"),
-            Error::MissingText => write!(out, "Subtitle text is missing"),
-            Error::OpenFile(ref err) => write!(out, "{}", err),
-            Error::ReadFile(ref err) => write!(out, "{}", err),
-        }
-    }
-}
 
 macro_rules! parse_time_part {
     ($part:expr) => {{
