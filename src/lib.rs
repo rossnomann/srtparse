@@ -20,13 +20,15 @@
 //!
 //! [1]: https://matroska.org/technical/specs/subtitles/srt.html
 #![warn(missing_docs)]
-use std::error::Error as StdError;
-use std::fmt;
-use std::fs::File;
-use std::io::{Error as IoError, Read};
-use std::path::Path;
-use std::result::Result as StdResult;
-use std::time::Duration;
+use std::{
+    error::Error as StdError,
+    fmt,
+    fs::File,
+    io::{Error as IoError, Read},
+    path::Path,
+    result::Result as StdResult,
+    time::Duration,
+};
 
 const UTF8_BOM: &str = "\u{feff}";
 
@@ -228,8 +230,7 @@ fn duration_from_str(time: &str) -> Result<Duration> {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-    use {parse, read_from_file, Result, UTF8_BOM};
+    use super::*;
 
     #[test]
     fn it_works() {
@@ -301,9 +302,7 @@ Soon, Marcus will take the throne.
 
     #[test]
     fn it_fails_with_bad_end_time() {
-        let err = parse("1\n00:00:58,392 --> bad end time")
-            .unwrap_err()
-            .to_string();
+        let err = parse("1\n00:00:58,392 --> bad end time").unwrap_err().to_string();
         assert_eq!(err, "Invalid subtitle time");
     }
 
@@ -335,17 +334,13 @@ Soon, Marcus will take the throne.
 
     #[test]
     fn it_fails_with_missing_text() {
-        let err = parse("1\n00:00:58,392 --> 00:01:02,563")
-            .unwrap_err()
-            .to_string();
+        let err = parse("1\n00:00:58,392 --> 00:01:02,563").unwrap_err().to_string();
         assert_eq!(err, "Subtitle text is missing");
     }
 
     #[test]
     fn read_from_file_failed() {
-        let err = read_from_file("/file/does/not/exist")
-            .unwrap_err()
-            .to_string();
+        let err = read_from_file("/file/does/not/exist").unwrap_err().to_string();
         assert_eq!(err, "No such file or directory (os error 2)");
     }
 
