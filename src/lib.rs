@@ -21,10 +21,12 @@
 //! [1]: https://matroska.org/technical/specs/subtitles/srt.html
 #![warn(missing_docs)]
 
-pub use crate::error::Error;
+pub use self::{error::Error, subtitle::Subtitle};
+
 use std::{fs::File, io::Read, path::Path, result::Result as StdResult, time::Duration};
 
 mod error;
+mod subtitle;
 
 const UTF8_BOM: &str = "\u{feff}";
 
@@ -33,19 +35,6 @@ enum State {
     Pos,
     Time,
     Text,
-}
-
-/// A subtitle item
-#[derive(Debug)]
-pub struct Subtitle {
-    /// A number indicating which subtitle it is in the sequence
-    pub pos: usize,
-    /// The time that the subtitle should appear
-    pub start_time: Duration,
-    /// The time that the subtitle should disappear
-    pub end_time: Duration,
-    /// The subtitle itself
-    pub text: String,
 }
 
 /// Read subtitles from a string
