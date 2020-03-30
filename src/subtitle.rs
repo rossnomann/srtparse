@@ -1,8 +1,8 @@
 use crate::time::Time;
-use std::fmt;
+use std::{error::Error, fmt};
 
 /// A subtitle item
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Subtitle {
     /// A number indicating which subtitle it is in the sequence
     pub pos: usize,
@@ -23,6 +23,81 @@ impl fmt::Display for Subtitle {
         )
     }
 }
+
+#[derive(Default)]
+pub(super) struct SubtitleFactory {
+    pos: Option<usize>,
+    start_time: Option<Time>,
+    end_time: Option<Time>,
+    text: Option<String>,
+}
+
+impl SubtitleFactory {
+    pub(super) fn set_pos(&mut self, pos: usize) {
+        self.pos = Some(pos);
+    }
+
+    pub(super) fn set_start_time(&mut self, start_time: Time) {
+        self.start_time = Some(start_time);
+    }
+
+    pub(super) fn set_end_time(&mut self, end_time: Time) {
+        self.end_time = Some(end_time);
+    }
+
+    pub(super) fn append_text<P: AsRef<str>>(&mut self, part: P) {
+        let part = part.as_ref();
+        match self.text.as_mut() {
+            Some(text) => {
+                text.push('\n');
+                text.push_str(part);
+            }
+            None => {
+                self.text = Some(String::from(part));
+            }
+        }
+    }
+
+    pub(super) fn maybe_ready(&self) -> bool {
+        self.pos.is_some()
+    }
+
+    pub(super) fn take(&mut self) -> Result<Subtitle, SubtitleFactoryError> {
+        Ok(Subtitle {
+            pos: self.pos.take().ok_or(SubtitleFactoryError::NoPosition)?,
+            start_time: self.start_time.take().ok_or(SubtitleFactoryError::NoStartTime)?,
+            end_time: self.end_time.take().ok_or(SubtitleFactoryError::NoEndTime)?,
+            text: self.text.take().ok_or(SubtitleFactoryError::NoText)?,
+        })
+    }
+}
+
+/// Could not create subtitle
+#[derive(Debug)]
+pub enum SubtitleFactoryError {
+    /// Subtitle position is missing
+    NoPosition,
+    /// Subtitle start time is missing
+    NoStartTime,
+    /// Subtitle end time is missing
+    NoEndTime,
+    /// Subtitle text is missing
+    NoText,
+}
+
+impl fmt::Display for SubtitleFactoryError {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        use self::SubtitleFactoryError::*;
+        match self {
+            NoPosition => write!(out, "item position is missing"),
+            NoStartTime => write!(out, "item start time is missing"),
+            NoEndTime => write!(out, "item end time is missing"),
+            NoText => write!(out, "item text is missing"),
+        }
+    }
+}
+
+impl Error for SubtitleFactoryError {}
 
 #[cfg(test)]
 mod tests {
