@@ -8,6 +8,17 @@ A library for parsing [SRT Subtitles][1].
 
 ## Changelog
 
+### 0.2.0 (30.03.2020)
+
+- Switched to 2018 edition.
+- Renamed `Subtitle` to `Item`.
+- Changed type of subtitle's `start_time` and `end_time` to `Time`.
+  (You still able to convert it to `Duration`.)
+- Renamed `parse` function to `from_str`.
+- Renamed `read_from_file` function to `from_file`.
+- Added `from_reader` function.
+- Removed `Result` alias.
+- `Error` struct replaced by a bunch of different structs.
 
 ### 0.1.1 (04.12.2016)
 
