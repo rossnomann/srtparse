@@ -1,6 +1,6 @@
 use crate::{
+    item::Item,
     parser::{ParseError, Parser},
-    subtitle::Subtitle,
 };
 use std::{
     error::Error,
@@ -11,7 +11,7 @@ use std::{
 };
 
 /// Read subtitles from a string
-pub fn from_str<S>(input: S) -> Result<Vec<Subtitle>, ReaderError>
+pub fn from_str<S>(input: S) -> Result<Vec<Item>, ReaderError>
 where
     S: AsRef<[u8]>,
 {
@@ -19,12 +19,12 @@ where
 }
 
 /// Read subtitles from a file
-pub fn from_file(path: impl AsRef<Path>) -> Result<Vec<Subtitle>, ReaderError> {
+pub fn from_file(path: impl AsRef<Path>) -> Result<Vec<Item>, ReaderError> {
     from_reader(BufReader::new(File::open(path).map_err(ReaderError::OpenFile)?))
 }
 
 /// Read subtitles from a buffered reader
-pub fn from_reader(reader: impl BufRead) -> Result<Vec<Subtitle>, ReaderError> {
+pub fn from_reader(reader: impl BufRead) -> Result<Vec<Item>, ReaderError> {
     let parser = Parser::new(reader);
     let mut result = Vec::new();
     for item in parser {

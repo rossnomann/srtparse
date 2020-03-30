@@ -3,7 +3,7 @@ use std::{error::Error, fmt};
 
 /// A subtitle item
 #[derive(Clone, Debug, PartialEq)]
-pub struct Subtitle {
+pub struct Item {
     /// A number indicating which subtitle it is in the sequence
     pub pos: usize,
     /// The time that the subtitle should appear
@@ -14,7 +14,7 @@ pub struct Subtitle {
     pub text: String,
 }
 
-impl fmt::Display for Subtitle {
+impl fmt::Display for Item {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         write!(
             out,
@@ -25,14 +25,14 @@ impl fmt::Display for Subtitle {
 }
 
 #[derive(Default)]
-pub(super) struct SubtitleFactory {
+pub(super) struct ItemFactory {
     pos: Option<usize>,
     start_time: Option<Time>,
     end_time: Option<Time>,
     text: Option<String>,
 }
 
-impl SubtitleFactory {
+impl ItemFactory {
     pub(super) fn set_pos(&mut self, pos: usize) {
         self.pos = Some(pos);
     }
@@ -62,19 +62,19 @@ impl SubtitleFactory {
         self.pos.is_some()
     }
 
-    pub(super) fn take(&mut self) -> Result<Subtitle, SubtitleFactoryError> {
-        Ok(Subtitle {
-            pos: self.pos.take().ok_or(SubtitleFactoryError::NoPosition)?,
-            start_time: self.start_time.take().ok_or(SubtitleFactoryError::NoStartTime)?,
-            end_time: self.end_time.take().ok_or(SubtitleFactoryError::NoEndTime)?,
-            text: self.text.take().ok_or(SubtitleFactoryError::NoText)?,
+    pub(super) fn take(&mut self) -> Result<Item, ItemFactoryError> {
+        Ok(Item {
+            pos: self.pos.take().ok_or(ItemFactoryError::NoPosition)?,
+            start_time: self.start_time.take().ok_or(ItemFactoryError::NoStartTime)?,
+            end_time: self.end_time.take().ok_or(ItemFactoryError::NoEndTime)?,
+            text: self.text.take().ok_or(ItemFactoryError::NoText)?,
         })
     }
 }
 
 /// Could not create subtitle
 #[derive(Debug)]
-pub enum SubtitleFactoryError {
+pub enum ItemFactoryError {
     /// Subtitle position is missing
     NoPosition,
     /// Subtitle start time is missing
@@ -85,9 +85,9 @@ pub enum SubtitleFactoryError {
     NoText,
 }
 
-impl fmt::Display for SubtitleFactoryError {
+impl fmt::Display for ItemFactoryError {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
-        use self::SubtitleFactoryError::*;
+        use self::ItemFactoryError::*;
         match self {
             NoPosition => write!(out, "item position is missing"),
             NoStartTime => write!(out, "item start time is missing"),
@@ -97,7 +97,7 @@ impl fmt::Display for SubtitleFactoryError {
     }
 }
 
-impl Error for SubtitleFactoryError {}
+impl Error for ItemFactoryError {}
 
 #[cfg(test)]
 mod tests {
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn display() {
-        let subtitle = Subtitle {
+        let item = Item {
             pos: 1,
             start_time: Time {
                 hours: 0,
@@ -121,6 +121,6 @@ mod tests {
             },
             text: String::from("test"),
         };
-        assert_eq!(subtitle.to_string(), "1\n00:00:05,200-->00:00:06,300\ntest");
+        assert_eq!(item.to_string(), "1\n00:00:05,200-->00:00:06,300\ntest");
     }
 }

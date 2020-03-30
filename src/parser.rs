@@ -1,5 +1,5 @@
 use crate::{
-    subtitle::{Subtitle, SubtitleFactory, SubtitleFactoryError},
+    item::{Item, ItemFactory, ItemFactoryError},
     time::ParseTimeError,
 };
 use std::{
@@ -16,7 +16,7 @@ const TIME_DELIMITER: &str = "-->";
 pub struct Parser<B> {
     lines: Lines<B>,
     state: State,
-    factory: SubtitleFactory,
+    factory: ItemFactory,
 }
 
 impl<B> Parser<B>
@@ -28,7 +28,7 @@ where
         Parser {
             lines: reader.lines(),
             state: State::Start,
-            factory: SubtitleFactory::default(),
+            factory: ItemFactory::default(),
         }
     }
 
@@ -36,7 +36,7 @@ where
         Ok(self.lines.next().transpose().map_err(ParseError::ReadLine)?)
     }
 
-    fn parse_item(&mut self) -> Result<Option<Subtitle>, ParseError> {
+    fn parse_item(&mut self) -> Result<Option<Item>, ParseError> {
         use self::State::*;
         loop {
             match &self.state {
@@ -116,7 +116,7 @@ impl<B> Iterator for Parser<B>
 where
     B: BufRead,
 {
-    type Item = Result<Subtitle, ParseError>;
+    type Item = Result<Item, ParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.parse_item().transpose()
@@ -129,7 +129,7 @@ pub enum ParseError {
     /// An error when parsing subtitle position
     BadPosition(ParseIntError),
     /// Can not create subtitle item
-    CreateSubtitle(SubtitleFactoryError),
+    CreateSubtitle(ItemFactoryError),
     /// An extra time part found in subtitle, there should be start and end only
     ExtraTimePart(String),
     /// Could not parse start time
@@ -142,8 +142,8 @@ pub enum ParseError {
     UnexpectedEnd,
 }
 
-impl From<SubtitleFactoryError> for ParseError {
-    fn from(err: SubtitleFactoryError) -> Self {
+impl From<ItemFactoryError> for ParseError {
+    fn from(err: ItemFactoryError) -> Self {
         ParseError::CreateSubtitle(err)
     }
 }
@@ -188,7 +188,7 @@ mod tests {
     use crate::time::Time;
     use std::io::Cursor;
 
-    fn parse_ok(data: &str) -> Vec<Subtitle> {
+    fn parse_ok(data: &str) -> Vec<Item> {
         let parser = Parser::new(Cursor::new(data));
         parser.map(|x| x.unwrap()).collect()
     }
@@ -225,7 +225,7 @@ Soon, Marcus will take the throne.
             assert_eq!(result.len(), 4);
             assert_eq!(
                 result[0],
-                Subtitle {
+                Item {
                     pos: 1,
                     start_time: Time {
                         hours: 0,
@@ -245,7 +245,7 @@ Soon, Marcus will take the throne.
 
             assert_eq!(
                 result[1],
-                Subtitle {
+                Item {
                     pos: 2,
                     start_time: Time {
                         hours: 0,
@@ -265,7 +265,7 @@ Soon, Marcus will take the throne.
 
             assert_eq!(
                 result[2],
-                Subtitle {
+                Item {
                     pos: 3,
                     start_time: Time {
                         hours: 0,
@@ -285,7 +285,7 @@ Soon, Marcus will take the throne.
 
             assert_eq!(
                 result[3],
-                Subtitle {
+                Item {
                     pos: 652,
                     start_time: Time {
                         hours: 1,
