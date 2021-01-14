@@ -32,4 +32,4 @@ A library for parsing [SRT Subtitles][1].
 
 The MIT License (MIT)
 
-[1]: https://matroska.org/technical/specs/subtitles/srt.html
+[1]: https://www.matroska.org/technical/subtitles.html#srt-subtitles
