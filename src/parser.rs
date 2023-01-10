@@ -33,7 +33,7 @@ where
     }
 
     fn read_line(&mut self) -> Result<Option<String>, ParseError> {
-        Ok(self.lines.next().transpose().map_err(ParseError::ReadLine)?)
+        self.lines.next().transpose().map_err(ParseError::ReadLine)
     }
 
     fn parse_item(&mut self) -> Result<Option<Item>, ParseError> {
@@ -152,16 +152,15 @@ impl fmt::Display for ParseError {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         use self::ParseError::*;
         match self {
-            BadPosition(err) => write!(out, "bad subtitle position: {}", err),
-            CreateSubtitle(err) => write!(out, "{}", err),
+            BadPosition(err) => write!(out, "bad subtitle position: {err}"),
+            CreateSubtitle(err) => write!(out, "{err}"),
             ExtraTimePart(part) => write!(
                 out,
-                "an extra time part found: '{}'; there should be start and end only",
-                part
+                "an extra time part found: '{part}'; there should be start and end only"
             ),
-            ParseTimeStart(err) => write!(out, "failed to parse start time: {}", err),
-            ParseTimeEnd(err) => write!(out, "failed to parse end time: {}", err),
-            ReadLine(err) => write!(out, "could not read a line from input: {}", err),
+            ParseTimeStart(err) => write!(out, "failed to parse start time: {err}"),
+            ParseTimeEnd(err) => write!(out, "failed to parse end time: {err}"),
+            ReadLine(err) => write!(out, "could not read a line from input: {err}"),
             UnexpectedEnd => write!(out, "unexpected end of input"),
         }
     }
@@ -304,7 +303,7 @@ Soon, Marcus will take the throne.
             );
         }
 
-        assert_it_works(&source_without_bom);
+        assert_it_works(source_without_bom);
         assert_it_works(&source_with_bom);
         assert_eq!(parse_ok("").len(), 0);
     }

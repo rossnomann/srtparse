@@ -53,8 +53,8 @@ impl fmt::Display for ReaderError {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         use self::ReaderError::*;
         match self {
-            OpenFile(err) => write!(out, "could not open a file: {}", err),
-            Parse(err) => write!(out, "parse error: {}", err),
+            OpenFile(err) => write!(out, "could not open a file: {err}"),
+            Parse(err) => write!(out, "parse error: {err}"),
         }
     }
 }

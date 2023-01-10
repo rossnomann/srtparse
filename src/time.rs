@@ -105,16 +105,16 @@ impl fmt::Display for ParseTimeError {
     fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
         use self::ParseTimeError::*;
         match self {
-            ParseHours(err) => write!(out, "could not parse hours: {}", err),
-            ParseMinutes(err) => write!(out, "could not parse minutes: {}", err),
-            ParseSeconds(err) => write!(out, "could not parse seconds: {}", err),
-            ParseMilliseconds(err) => write!(out, "could not parse milliseconds: {}", err),
+            ParseHours(err) => write!(out, "could not parse hours: {err}"),
+            ParseMinutes(err) => write!(out, "could not parse minutes: {err}"),
+            ParseSeconds(err) => write!(out, "could not parse seconds: {err}"),
+            ParseMilliseconds(err) => write!(out, "could not parse milliseconds: {err}"),
             MissingHours => write!(out, "hours not found"),
             MissingMinutes => write!(out, "minutes not found"),
             MissingSeconds => write!(out, "seconds not found"),
             MissingMilliseconds => write!(out, "milliseconds not found"),
             MissingTime => write!(out, "time not found"),
-            UnexpectedTimePart(part) => write!(out, "unexpected time part: '{}'", part),
+            UnexpectedTimePart(part) => write!(out, "unexpected time part: '{part}'"),
         }
     }
 }
