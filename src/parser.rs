@@ -217,7 +217,7 @@ leader ever to rule the Lycan clan...
 01:53:02,325 --> 01:53:06,162
 Soon, Marcus will take the throne.
 ";
-        let source_with_bom = format!("{}{}", UTF8_BOM, source_without_bom);
+        let source_with_bom = format!("{UTF8_BOM}{source_without_bom}");
 
         fn assert_it_works(data: &str) {
             let result = parse_ok(data);
