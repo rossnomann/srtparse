@@ -1,4 +1,4 @@
-use std::{error::Error, fmt, num::ParseIntError, result::Result, str::FromStr, time::Duration};
+use std::{error::Error, fmt, num::ParseIntError, str::FromStr, time::Duration};
 
 /// Describes the time when subtitle should appear or disappear
 #[derive(Clone, Copy, Debug, PartialEq)]
