@@ -22,7 +22,7 @@
 pub use self::{
     item::{Item, ItemFactoryError},
     parser::ParseError,
-    reader::{from_file, from_reader, from_str, ReaderError},
+    reader::{ReaderError, from_file, from_reader, from_str},
     time::{ParseTimeError, Time},
 };
 
